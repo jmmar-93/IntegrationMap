@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no, viewport-fit=cover"/>
+    <meta name="description" content="Radial layout of an arbitrary graph given a start node; selecting a node re-lays out using it as a new root node."/> 
+    <link rel="stylesheet" href="site/assets/css/style.css"/> 
+    <title>Mapa de Aplicaciones</title>
+  </head>
+
+<body>
+  <div class="md:flex flex-col md:flex-row md:min-h-screen w-full max-w-screen-xl mx-auto">
+    <script src="https://unpkg.com/gojs@2.3.3/release/go.js"></script>
+    <div id="allSampleContent" class="p-4 w-full">
+      <script src="https://unpkg.com/gojs@2.3.3/extensions/RadialLayout.js"></script>
+      <script id="code">
+
+        function init() {
+          const $ = go.GraphObject.make;
+
+          myDiagram =
+            $(go.Diagram, "myDiagramDiv",
+              {
+                initialAutoScale: go.Diagram.Uniform,
+                padding: 10,
+                isReadOnly: true,
+                layout: $(RadialLayout, {
+                  maxLayers: 2,
+                  rotateNode: function(node, angle, sweep, radius) {
+                    node.angle = angle;
+                    var label = node.findObject("TEXTBLOCK");
+                    if (label !== null) {
+                      label.angle = ((angle > 90 && angle < 270 || angle < -90) ? 180 : 0);
+                    }
+                  },
+                  commitLayers: function() {
+                    const diagram = this.diagram;
+                    var gridlayer = diagram.findLayer("Grid");
+                    var circles = new go.Set(/*go.Part*/);
+                    gridlayer.parts.each(circle => {
+                      if (circle.name === "CIRCLE") circles.add(circle);
+                    });
+                    circles.each(circle => diagram.remove(circle));
+                    for (var lay = 1; lay <= this.maxLayers; lay++) {
+                      var radius = lay * this.layerThickness;
+                      var circle =
+                        $(go.Part,
+                          { name: "CIRCLE", layerName: "Grid" },
+                          { locationSpot: go.Spot.Center, location: this.root.location },
+                          $(go.Shape, "Circle",
+                            { width: radius * 2, height: radius * 2 },
+                            { fill: "rgba(200,200,200,0.2)", stroke: null }));
+                      diagram.add(circle);
+                    }
+                  }
+                }),
+                "animationManager.isEnabled": false
+              }
+            );
+
+          var commonToolTip =
+            $("ToolTip",
+              $(go.Panel, "Vertical",
+                { margin: 3 },
+                $(go.TextBlock,
+                  { margin: 4, font: "bold 12pt sans-serif" },
+                  new go.Binding("text")),
+                $(go.TextBlock,
+                  new go.Binding("text", "color", c => "Color: " + c)),
+                $(go.TextBlock,
+                  new go.Binding("text", "", ad => "Connections: " + ad.adornedPart.linksConnected.count).ofObject())
+              )
+            );
+
+
+          myDiagram.nodeTemplate =
+            $(go.Node, "Spot",
+              {
+                locationSpot: go.Spot.Center,
+                locationObjectName: "SHAPE",
+                selectionAdorned: false,
+                click: nodeClicked,
+                toolTip: commonToolTip
+              },
+              $(go.Shape, "Circle",
+                {
+                  name: "SHAPE",
+                  fill: "lightgray",
+                  stroke: "transparent",
+                  strokeWidth: 2,
+                  desiredSize: new go.Size(20, 20),
+                  portId: ""
+                },
+                new go.Binding("fill", "color")),
+              $(go.TextBlock,
+                {
+                  name: "TEXTBLOCK",
+                  alignment: go.Spot.Right,
+                  alignmentFocus: go.Spot.Left
+                },
+                new go.Binding("text"))
+            );
+
+          myDiagram.nodeTemplateMap.add("Root",
+            $(go.Node, "Auto",
+              {
+                locationSpot: go.Spot.Center,
+                selectionAdorned: false,
+                toolTip: commonToolTip
+              },
+              $(go.Shape, "Circle",
+                { fill: "white" }),
+              $(go.TextBlock,
+                { font: "bold 12pt sans-serif", margin: 5 },
+                new go.Binding("text"))
+            )
+          );
+
+          myDiagram.linkTemplate =
+            $(go.Link,
+              {
+                routing: go.Link.Normal,
+                curve: go.Link.Bezier,
+                selectionAdorned: false,
+                layerName: "Background"
+              },
+              $(go.Shape,
+                {
+                  stroke: "black",  // default value, but is data-bound
+                  strokeWidth: 1
+                },
+                new go.Binding("stroke", "color")
+              )
+            );
+          generateGraph();
+        }
+
+        function generateGraph() {
+          var names = [
+            "Algoritmo", "SAP", "Maúa", "Thuban",
+            "Grobosoft", "BI", "SIP", "Esker", "TMS",
+            "Succes Factor"
+          ];
+
+          var nodeDataArray = [
+            { key: 1, text: "Algoritmo", color: go.Brush.randomColor(128,240) },
+            { key: 2, text: "SAP", color: go.Brush.randomColor(128,240) },
+            { key: 3, text: "Maúa", color: go.Brush.randomColor(128,240) },
+            { key: 4, text: "Thuban", color: go.Brush.randomColor(128,240) },
+            { key: 5, text: "Grobosoft", color: go.Brush.randomColor(128,240) },
+            { key: 6, text: "BI", color: go.Brush.randomColor(128,240) },
+            { key: 7, text: "SIP", color: go.Brush.randomColor(128,240) },
+            { key: 8, text: "Esker", color: go.Brush.randomColor(128,240) },
+            { key: 9, text: "Succes\nFactor", color: go.Brush.randomColor(128,240) },
+            { key: 10, text: "TMS", color: go.Brush.randomColor(128,240)}
+          ];
+          
+          var linkDataArray = [
+            { from: 1, to: 2, color: go.Brush.randomColor(0, 127) },
+            { from: 1, to: 3, color: go.Brush.randomColor(0, 127) },
+            { from: 1, to: 4, color: go.Brush.randomColor(0, 127) },
+            { from: 1, to: 5, color: go.Brush.randomColor(0, 127) },
+            { from: 1, to: 6, color: go.Brush.randomColor(0, 127) },
+            { from: 2, to: 3, color: go.Brush.randomColor(0, 127) },
+            { from: 2, to: 6, color: go.Brush.randomColor(0, 127) },
+            { from: 2, to: 7, color: go.Brush.randomColor(0, 127) },
+            { from: 2, to: 8, color: go.Brush.randomColor(0, 127) },
+            { from: 2, to: 9, color: go.Brush.randomColor(0, 127) },
+            { from: 5, to: 3, color: go.Brush.randomColor(0, 127) },
+            { from: 5, to: 6, color: go.Brush.randomColor(0, 127) },
+            { from: 6, to: 7, color: go.Brush.randomColor(0, 127) },
+            { from: 7, to: 10, color: go.Brush.randomColor(0, 127) }
+          ];
+          myDiagram.model = new go.GraphLinksModel(nodeDataArray, linkDataArray);
+
+          var someone = nodeDataArray[1];
+          nodeClicked(null, myDiagram.findNodeForData(someone));
+        }
+
+        function nodeClicked(e, root) {
+          var diagram = root.diagram;
+          if (diagram === null) return;
+          diagram.nodes.each(n => {
+            n.visible = true;
+            if (n !== root) n.category = "";
+          });
+          root.category = "Root";
+          diagram.layout.root = root;
+          diagram.layoutDiagram(true);
+        }
+
+        let maxLayers = 2;
+
+        function adjustMaxLayers(){
+          if(!isInteger(maxLayers) || maxLayers < 1 || maxLayers > 10){
+            alert("Nro 1 al 10");
+          }else{
+            myDiagram.layout.maxLayers = Math.max(1, Math.min(maxLayers, 10));
+            nodeClicked(null, myDiagram.layout.root);
+          }
+        }
+
+        function addLayer() {
+          if (maxLayers < 10) {
+            maxLayers++;
+            document.getElementById("maxLayersChanger").value = maxLayers;
+            adjustMaxLayers();
+          }
+        }
+
+        function removeLayer() {
+          if (maxLayers > 1) {
+            maxLayers--;
+            document.getElementById("maxLayersChanger").value = maxLayers;
+            adjustMaxLayers();
+          }
+        }
+
+        function isInteger(val) {
+          return typeof val === 'number' &&
+          isFinite(val) &&
+          Math.floor(val) === val;
+        }
+        window.addEventListener('DOMContentLoaded', init);
+      </script>
+
+      <div id="sample" style="display: flex; justify-content: space-between;">
+        <div id="myDiagramDiv" style="border: solid 1px black; background: white; width: 100%; height: 550px"></div>
+      </div>
+      <div>
+        <label for="maxLayersChanger">Capas:</label>
+        <input type="text" id="maxLayersChanger" name="maxLayers" value="2" style="display: none;"/>
+        <button onclick="addLayer()">+</button>
+        <button onclick="removeLayer()">-</button>
+      </div>
+    </div>
+  </div>
+</body>
+<script src="../assets/js/goSamples.js"></script>
+</html>
