@@ -156,7 +156,8 @@
             { key: 11, text: "Sentinel", color: go.Brush.randomColor(128,240) },
             { key: 12, text: "Open\nWater", color: go.Brush.randomColor(128,240) },
             { key: 13, text: "Google\nMaps", color: go.Brush.randomColor(128,240) },
-            { key: 14, text: "ARBA", color: go.Brush.randomColor(128,240) }
+            { key: 14, text: "ARBA", color: go.Brush.randomColor(128,240) },
+            { key: 15, text: "AFIP", color: go.Brush.randomColor(128,240) }
           ];
           
           var linkDataArray = [
@@ -176,7 +177,8 @@
             { from: 3, to: 11, color: go.Brush.randomColor(0, 127) },
             { from: 3, to: 12, color: go.Brush.randomColor(0, 127) },
             { from: 7, to: 13, color: go.Brush.randomColor(0, 127) },
-            { from: 7, to: 14, color: go.Brush.randomColor(0, 127) }
+            { from: 7, to: 14, color: go.Brush.randomColor(0, 127) },
+            { from: 1, to: 14, color: go.Brush.randomColor(0, 127) }
           ];
           myDiagram.model = new go.GraphLinksModel(nodeDataArray, linkDataArray);
 
